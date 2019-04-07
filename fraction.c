@@ -76,12 +76,12 @@ PtFraction FractionCreate (int pnum, int pden) {	/* construtor inicializador - i
 }
 
 int FractionGetNumerator (PtFraction pfrac) {
-	if(pfrac == NULL){ Error = NO_FRACTION; return 0; }
+	if(FractionIsNull(pfrac)){ Error = NO_FRACTION; return 0; }
 	else{Error = OK; return pfrac->Num;}
 }
 
 int FractionGetDenominator (PtFraction pfrac) {
-	if(pfrac == NULL){ Error = NO_FRACTION; return 0; }
+	if(FractionIsNull(pfrac)){ Error = NO_FRACTION; return 0; }
 	else{Error = OK; return pfrac->Den;}
 }
 
@@ -89,7 +89,7 @@ void FractionDestroy (PtFraction *pfrac) {		/* destrutor - destructor */
 
 	PtFraction Frac = *pfrac;
 
-	if(Frac == NULL){ Error = NO_FRACTION; return;}
+	if(FractionIsNull(Frac)){ Error = NO_FRACTION; return;}
 	free(Frac);
 	*pfrac = NULL; /*defensive programming*/
 	Error = OK;
@@ -97,20 +97,20 @@ void FractionDestroy (PtFraction *pfrac) {		/* destrutor - destructor */
 
 PtFraction FractionCopy (PtFraction pfrac) {	/* construtor cópia - copy constructor */
 
-	if(pfrac == NULL) {Error = NO_FRACTION; return NULL;}
+	if(!FractionIsProper(pfrac)) {Error = NO_FRACTION; return NULL;}
 	else return FractionCreate(pfrac->Num, pfrac->Den);
 }
 
 PtFraction FractionSymmetrical (PtFraction pfrac) {		/* construtor simétrico - symmetrical constructor */
 
-	if(pfrac == NULL) {Error = NO_FRACTION; return NULL;}
+	if(!FractionIsProper(pfrac)) {Error = NO_FRACTION; return NULL;}
 	else return FractionCreate(-pfrac->Num, pfrac->Den);
 }
 
 PtFraction FractionAddition (PtFraction pfrac1, PtFraction pfrac2) {
 	
 	PtFraction Frac;
-	if(pfrac1 == NULL || pfrac2 == NULL) {Error = NO_FRACTION; return NULL;}
+	if(!FractionIsProper(pfrac1) || !FractionIsProper(pfrac2)) {Error = NO_FRACTION; return NULL;}
 	if((Frac = CreateFraction())==NULL){Error = NO_MEM; return NULL;}
 
 	Frac->Num = (pfrac1->Num * pfrac2->Den) + (pfrac2->Num * pfrac1->Den);
@@ -124,7 +124,7 @@ PtFraction FractionAddition (PtFraction pfrac1, PtFraction pfrac2) {
 PtFraction FractionSubtraction (PtFraction pfrac1, PtFraction pfrac2) {
 	
 	PtFraction Frac;
-	if(pfrac1 == NULL || pfrac2 == NULL) {Error = NO_FRACTION; return NULL;}
+	if(!FractionIsProper(pfrac1) || !FractionIsProper(pfrac2)) {Error = NO_FRACTION; return NULL;}
 	if((Frac = CreateFraction())==NULL){Error = NO_MEM; return NULL;}
 
 	Frac->Num = (pfrac1->Num * pfrac2->Den) - (pfrac2->Num * pfrac1->Den);
@@ -190,7 +190,9 @@ int FractionCompareTo (PtFraction pfrac1, PtFraction pfrac2) {
 }
 
 int FractionIsProper (PtFraction pfrac) {
-            return 0;
+	if (FractionIsNull(pfrac)) return 0;
+	if (pfrac->Den ==0) return 0;
+    return 1;
 }
 
 /*********************** Definição das Funções Internas ***********************/

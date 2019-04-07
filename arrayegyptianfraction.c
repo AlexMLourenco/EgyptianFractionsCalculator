@@ -3,17 +3,15 @@
  A estrutura de dados de suporte da fração egípcia é uma estrutura, constituída
  pelo campo inteiro Size para indicar o número de frações existentes, pelo campo
  inteiro Complete para indicar se a fração egípcia está completa/incompleta, e
- pelos ponteiros Head e Tail para aceder à lista ligada que armazena as frações 
- unitárias contituintes da fração egípcia.
+ pelo array que armazena as frações unitárias contituintes da fração egípcia.
 
- Autor : Alexandre Emanuel Monteiro Lourenço    NMec: 79894
+ Autor : Alexnadre Emanuel Monteiro Lourenço    NMEc: 79894
  
  Implementation file of the abstract data type EGYPTIAN FRACTION.
  The supporting data structure of the egyptian fraction is a structure, constituted
  by the integer field Size to indicate the number of fractions, by the integer field
  Complete to indicate if the egyptian fraction is complete/incomplete, and by the
- Head and Tail pointers to access the linked list that stores the unit fractions
- constituent of the egyptian fraction.
+ array that stores the unit fractions constituent of the egyptian fraction.
 *******************************************************************************/
 
 #include <stdio.h>
@@ -25,18 +23,11 @@
 /********** Definição da Estrutura de Dados Interna da Fração Egípcia *********/
 /************ Egiptian Fraction's Internal Data Structure Definition **********/
 
-typedef struct node *PtNode;
-struct node /* definição do nó da lista ligada - link list node definition */
-{
-	PtFraction PtElem;  /* elemento da lista - list element */
-	PtNode PtNext;  /* ponteiro para o nó seguinte - next node pointer */
-};
-
 struct egyptianfraction
 {
 	int Size;	/* número de frações unitárias - number of unit fractions */
 	int Complete;	/* fração egípcia completa/incompleta - complete/incomplete egyptian fraction */
-	PtNode Head, Tail;  /* ponteiros para a lista de frações unitárias - pointers to the list of unit fractions */
+	PtFraction Array[MAX_SIZE];  /* array de frações unitárias - array of unit fractions */
 };
 
 /*********************** Controlo Centralizado de Erro ************************/
@@ -64,19 +55,16 @@ static char *AbnormalErrorMessage = "erro desconhecido - unknown error";
 /************************ Alusão às Funções Auxiliares ************************/
 /*********************** Allusion to Auxiliary Functions **********************/
 
-PtNode NodeCreate (PtFraction);
-void NodeDestroy (PtNode *);
-void ListDestroy (PtNode *);
 static PtFraction CreateUnitFraction (PtFraction *);
 
 /*************************** Definição das Funções ****************************/
 /*************************** Function Definitions *****************************/
 
-void EgyptianFractionClearError (void){ Error = OK; }
+void EgyptianFractionClearError (void) { Error = OK; }
 
 int EgyptianFractionError (void) { return Error; }
 
-char *EgyptianFractionErrorMessage (void){
+char *EgyptianFractionErrorMessage (void) {
 	if (Error < N) return ErrorMessages [Error];
 	else return AbnormalErrorMessage;	/* não há mensagem de erro - - no error message */
 }
@@ -85,7 +73,6 @@ PtEgyptianFraction EgyptianFractionCreate (PtFraction pfraction) {	/* construtor
 	
 	PtEgyptianFraction Egyp;
 	PtFraction pt, original;
-	PtNode node;
 	int i;
 	if(pfraction==0){ Error = NO_FRACTION; return NULL; }
 	if((Egyp = (PtEgyptianFraction) malloc (sizeof (struct egyptianfraction))) == NULL) { 
@@ -100,21 +87,15 @@ PtEgyptianFraction EgyptianFractionCreate (PtFraction pfraction) {	/* construtor
 	do {	  
 	  if (Egyp->Size == 0) {
 		  pt = CreateUnitFraction(&original);
-		  Egyp->Head = NodeCreate(FractionCopy(pt));
-		  Egyp->Tail = Egyp->Head;		  
+		  Egyp->Array[0] = FractionCopy(pt);		  
 	  } else {
-		  pt = FractionCopy(Egyp->Head->PtElem); 		  
-		  node = Egyp->Head;
-		  for (i=1; i < Egyp->Size; i++) {			  
-				node = node->PtNext;
-			  pt = FractionAddition(pt,node->PtElem);			  
+		  pt = FractionCopy(Egyp->Array[0]); 
+		  for (i=1; i < Egyp->Size; i++) {
+			  pt = FractionAddition(pt,Egyp->Array[i]);			  
 		  }
-      original = FractionSubtraction(pfraction,pt); 		  
 
-		  node = NodeCreate(CreateUnitFraction(&original));	
-
-		  Egyp->Tail->PtNext = node;
-		  Egyp->Tail = node;	  
+       	  original = FractionSubtraction(pfraction,pt); 		  
+		  Egyp->Array[Egyp->Size] = CreateUnitFraction(&original);		  
 	  }	  
 	  Egyp->Size++;	
 	} while (FractionGetNumerator(original) !=0);
@@ -128,17 +109,14 @@ PtEgyptianFraction EgyptianFractionCreate (PtFraction pfraction) {	/* construtor
 }
 
 void EgyptianFractionDestroy (PtEgyptianFraction *pegyp) {	/* destrutor - destructor */
+
 	PtEgyptianFraction Egyp = *pegyp;
 	int i;
 
 	if(Egyp == NULL){ Error = NO_FRACTION; return;}
 
-  PtNode node, nodeNext;
-	node = Egyp->Head;	
-	for(i=0; i < Egyp->Size; i++) {		
-		nodeNext = node->PtNext;
-		free(node);
-		node = nodeNext;
+	for(i=0; i < Egyp->Size; i++){
+		free(Egyp->Array[i]);
 	}
 	
 	free(Egyp);
@@ -146,12 +124,12 @@ void EgyptianFractionDestroy (PtEgyptianFraction *pegyp) {	/* destrutor - destru
 	*pegyp = NULL;
 }
 
-int  EgyptianFractionGetSize (PtEgyptianFraction pegyp){
+int  EgyptianFractionGetSize (PtEgyptianFraction pegyp) {
 	return pegyp->Size;
 }
 
-int  EgyptianFractionIsComplete (PtEgyptianFraction pegyp){
-	return pegyp->Complete;
+int  EgyptianFractionIsComplete (PtEgyptianFraction pegyp) {
+	return (pegyp->Complete == 1);
 }
 
 PtEgyptianFraction EgyptianFractionCopy (PtEgyptianFraction pegyp) {	/* construtor cópia - copy constructor */
@@ -166,16 +144,9 @@ PtEgyptianFraction EgyptianFractionCopy (PtEgyptianFraction pegyp) {	/* construt
 	}	
 
 	Copy->Size=pegyp->Size;
-  Copy->Head = NodeCreate(pegyp->Head->PtElem);
-	Copy->Tail = Copy->Head;
 
-	PtNode node = pegyp->Head->PtNext;
-	
-	for (i = 1; i < pegyp->Size; i++){ 
-		 Copy->Tail->PtNext = NodeCreate(node->PtElem);
-		 Copy->Tail = Copy->Tail->PtNext;
-		 
-		 node = node->PtNext;
+	for (i = 0; i < pegyp->Size; i++){ 
+		Copy->Array[i] = pegyp->Array[i];
 	}
 
 	Copy->Complete=1;
@@ -190,13 +161,10 @@ PtFraction EgyptianFractionToFraction (PtEgyptianFraction pegyp) {
 
 	if (pegyp == NULL) { Error = NO_FRACTION; return NULL; }
 	
-	frac = pegyp->Head->PtElem;
-	PtNode node = pegyp->Head->PtNext;
+	frac = pegyp->Array[0];
 
 	for (i = 1; i < pegyp->Size; i++){ 
-
-		frac = FractionAddition(frac,node->PtElem);
-		node = node->PtNext;
+		frac = FractionAddition(frac,pegyp->Array[i]);
 	}
 
 	Error = OK;
@@ -204,56 +172,36 @@ PtFraction EgyptianFractionToFraction (PtEgyptianFraction pegyp) {
 }
 
 int EgyptianFractionEquals (PtEgyptianFraction pegy1, PtEgyptianFraction pegy2) {
-	
 	int i;
 
 	if (pegy1 == NULL || pegy2 == NULL) { Error = NO_FRACTION; return 0; }
 	Error = OK;
-
 	if(pegy1->Size != pegy2->Size) return 0;  
 	if(pegy1->Complete != pegy2->Complete) return 0; 
 	
-	PtNode node1 = pegy1->Head;
-	PtNode node2 = pegy2->Head;
-
 	for (i = 0; i < pegy1->Size; i++){
-		FractionCompareTo(node1->PtElem,node2->PtElem);
-
-		node1 = node1->PtNext;
-		node2 = node2->PtNext;
+		FractionCompareTo(pegy1->Array[i],pegy2->Array[i]);
 	 }
 
 	return 1;
 }
 
 int EgyptianFractionBelongs (PtEgyptianFraction pegyptian, PtFraction pfraction) {
-		
+	
 	int i;
 
 	if (pegyptian == NULL) { Error = NO_FRACTION; return 0; }
 	Error = OK;
 	
-	PtNode node = pegyptian->Head;
-
 	for (i = 0; i < pegyptian->Size; i++){ 
-		if (FractionCompareTo(node->PtElem, pfraction) == 0) return 1;		
-		node = node->PtNext;
+		if (FractionCompareTo(pegyptian->Array[i], pfraction) == 0) return 1;		
 	 }
 
 	return 0;
 }
 
-PtFraction EgyptianFractionGetPos (PtEgyptianFraction pegyp, int pindex){	
-  int idx = 0;
-	PtNode node = pegyp->Head;
-
-  while(node!=NULL) {
-    if (idx == pindex) return node->PtElem;
-		node = node->PtNext;
-		idx++;
-	}
-
-	return NULL;
+PtFraction EgyptianFractionGetPos (PtEgyptianFraction pegyp, int pindex) {
+	return pegyp->Array[pindex];
 }
 
 /*********************** Definição das Funções Internas ***********************/
@@ -284,8 +232,7 @@ PtFraction EgyptianFractionGetPos (PtEgyptianFraction pegyp, int pindex){
  necessary validations - make a copy of the fraction and use the copy, not forgetting
  to eliminate the fraction before terminating its execution.
 *******************************************************************************/
-static PtFraction CreateUnitFraction (PtFraction *pfraction)
-{
+static PtFraction CreateUnitFraction (PtFraction *pfraction) {
 	PtFraction UnitFraction; int Num, Den, NewNum, NewDen;
 
 	Num = FractionGetNumerator (*pfraction);
@@ -310,55 +257,4 @@ static PtFraction CreateUnitFraction (PtFraction *pfraction)
 	}
 
 	return UnitFraction;
-}
-
-/*******************************************************************************
- Função auxiliar para criar um nó da lista ligada. Valores de erro: OK ou NO_MEM.
- 
- Auxiliary function to create a list node. Error codes: OK or NO_MEM.
-*******************************************************************************/
-PtNode NodeCreate (PtFraction pelem)	/* alocação do nó - node allocation */
-{
-	PtNode Node;
-
-	if ((Node = (PtNode) malloc (sizeof (struct node))) == NULL)
-    { Error = NO_MEM; return NULL; }
-
-	Node->PtElem = pelem;		/* copiar o elemento - copy the element */
-	Node->PtNext = NULL;	/* apontar para a frente para NULL - next is null */
-
-	Error = OK;
-	return Node;
-}
-
-/*******************************************************************************
- Função auxiliar para libertar um nó da lista ligada. Valores de erro: OK ou NULL_PTR.
- 
- Auxiliary function to free a link list node. Error codes: OK or NULL_PTR.
-*******************************************************************************/
-void NodeDestroy (PtNode *pnode)	/* libertação do nó - node releasing */
-{
-	if (*pnode == NULL) { Error = NULL_PTR; return; }
-	free (*pnode);	/* libertação do nó - free the node */
-	*pnode = NULL;	/* colocar o ponteiro a nulo - set the pointer to null */
-	Error = OK;
-}
-
-/*******************************************************************************
- Função auxiliar para destruir uma lista ligada. Valores de erro: OK ou NULL_PTR.
- 
- Auxiliary function to destroy a link list. Error codes: OK or NULL_PTR.
-*******************************************************************************/
-void ListDestroy (PtNode *phead)
-{
-    PtNode TmpHead = *phead; PtNode Node;
-
-    if (TmpHead == NULL) { Error = NULL_PTR; return; }
-    while (TmpHead != NULL)
-    {
-        Node = TmpHead; TmpHead = TmpHead->PtNext;
-        FractionDestroy (&Node->PtElem);
-        NodeDestroy (&Node);
-    }
-    Error = OK; 
 }
